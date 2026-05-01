@@ -1,0 +1,137 @@
+<div class="container-fluid py-4">
+  <div class="d-flex justify-content-between align-items-center mb-4 flex-wrap gap-2">
+    <h2 class="mb-0"><i class="bi bi-list-ul me-2"></i>{{ 'expenses.title' | translate }}</h2>
+    <a routerLink="/add-expense" class="btn btn-primary btn-sm">
+      <i class="bi bi-plus-circle me-1"></i> {{ 'expenses.addEntry' | translate }}
+    </a>
+  </div>
+
+  <!-- Filters -->
+  <div class="card mb-4">
+    <div class="card-body">
+      <div class="row g-3 align-items-end">
+        <div class="col-md-3">
+          <label class="form-label">{{ 'common.search' | translate }}</label>
+          <div class="input-group">
+            <span class="input-group-text"><i class="bi bi-search"></i></span>
+            <input type="text" class="form-control" [placeholder]="'expenses.searchPlaceholder' | translate"
+              [(ngModel)]="searchQuery" (input)="onSearchChange()" />
+          </div>
+        </div>
+        <div class="col-md-2">
+          <label class="form-label">{{ 'common.category' | translate }}</label>
+          <app-category-multiselect
+            [categories]="categories()"
+            [selected]="filterCategories"
+            (selectedChange)="onCategoryFilterChange($event)">
+          </app-category-multiselect>
+        </div>
+        <div class="col-md-3">
+          <label class="form-label">{{ 'expenses.dateRange' | translate }}</label>
+          <select class="form-select" [(ngModel)]="selectedRange" (ngModelChange)="onRangeChange()">
+            <option value="last-7">{{ 'expenses.last7Days' | translate }}</option>
+            <option value="last-30">{{ 'expenses.last30Days' | translate }}</option>
+            <option value="this-month">{{ 'expenses.thisMonth' | translate }}</option>
+            <option value="last-month">{{ 'expenses.lastMonth' | translate }}</option>
+            <option value="this-year">{{ 'expenses.thisYear' | translate }}</option>
+            <option value="custom">{{ 'expenses.customRange' | translate }}</option>
+          </select>
+        </div>
+        @if (selectedRange === 'custom') {
+          <div class="col-md-2">
+            <label class="form-label">{{ 'common.from' | translate }}</label>
+            <input type="date" class="form-control" [(ngModel)]="customStartDate" (change)="onRangeChange()" />
+          </div>
+          <div class="col-md-2">
+            <label class="form-label">{{ 'common.to' | translate }}</label>
+            <input type="date" class="form-control" [(ngModel)]="customEndDate" (change)="onRangeChange()" />
+          </div>
+        }
+        <div class="col-auto ms-auto align-self-end">
+          <button class="btn btn-outline-secondary btn-sm" (click)="clearFilters()">
+            <i class="bi bi-x-circle me-1"></i> {{ 'common.clear' | translate }}
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Table -->
+  <div class="card">
+    <div class="table-responsive">
+      <table class="table table-hover table-stacked mb-0">
+        <thead class="table-light">
+          <tr>
+            <th role="button" (click)="onSort('date')">
+              {{ 'common.date' | translate }} <i class="bi {{ getSortIcon('date') }}"></i>
+            </th>
+            <th role="button" (click)="onSort('description')">
+              {{ 'common.description' | translate }} <i class="bi {{ getSortIcon('description') }}"></i>
+            </th>
+            <th>{{ 'common.category' | translate }}</th>
+            <th role="button" class="text-end" (click)="onSort('amount')">
+              {{ 'common.amount' | translate }} <i class="bi {{ getSortIcon('amount') }}"></i>
+            </th>
+            <th class="text-center" style="width: 100px;">{{ 'common.actions' | translate }}</th>
+          </tr>
+        </thead>
+        <tbody>
+          @for (expense of pagedExpenses(); track expense.id) {
+            <tr>
+              <td [attr.data-label]="'common.date' | translate">{{ expense.date }}</td>
+              <td [attr.data-label]="'common.description' | translate">
+                {{ expense.description }}
+                @if (expense.recurringExpenseId) {
+                  <span class="badge bg-info ms-1" [title]="'expenses.recurring' | translate"><i class="bi bi-repeat"></i></span>
+                }
+              </td>
+              <td [attr.data-label]="'common.category' | translate">
+                <span class="badge" [style.background-color]="getCategoryColor(expense.categoryId)">
+                  {{ getCategoryName(expense.categoryId) }}
+                </span>
+              </td>
+              <td class="text-end fw-bold" [attr.data-label]="'common.amount' | translate">€ {{ expense.amount | number:'1.2-2' }}</td>
+              <td class="text-center td-actions">
+                <button class="btn btn-sm btn-outline-primary me-1" (click)="editExpense(expense.id!)" [title]="'common.actions' | translate">
+                  <i class="bi bi-pencil"></i>
+                </button>
+                <button class="btn btn-sm btn-outline-danger" (click)="deleteExpense(expense.id!)">
+                  <i class="bi bi-trash"></i>
+                </button>
+              </td>
+            </tr>
+          } @empty {
+            <tr>
+              <td colspan="5" class="text-center text-muted py-4">{{ 'expenses.noExpenses' | translate }}</td>
+            </tr>
+          }
+        </tbody>
+      </table>
+    </div>
+
+    <!-- Pagination -->
+    @if (totalPages() > 1) {
+      <div class="card-footer d-flex justify-content-between align-items-center">
+        <small class="text-muted">
+          {{ 'expenses.showing' | translate }} {{ (currentPage - 1) * pageSize + 1 }}–{{ currentPage * pageSize > filteredExpenses().length ? filteredExpenses().length : currentPage * pageSize }}
+          {{ 'expenses.of' | translate }} {{ filteredExpenses().length }}
+        </small>
+        <nav>
+          <ul class="pagination pagination-sm mb-0">
+            <li class="page-item" [class.disabled]="currentPage === 1">
+              <a class="page-link" (click)="prevPage()">{{ 'expenses.previous' | translate }}</a>
+            </li>
+            @for (p of [].constructor(totalPages()); track $index) {
+              <li class="page-item" [class.active]="currentPage === $index + 1">
+                <a class="page-link" (click)="currentPage = $index + 1">{{ $index + 1 }}</a>
+              </li>
+            }
+            <li class="page-item" [class.disabled]="currentPage === totalPages()">
+              <a class="page-link" (click)="nextPage()">{{ 'expenses.next' | translate }}</a>
+            </li>
+          </ul>
+        </nav>
+      </div>
+    }
+  </div>
+</div>

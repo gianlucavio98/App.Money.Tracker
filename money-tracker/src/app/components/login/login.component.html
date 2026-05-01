@@ -1,0 +1,40 @@
+<div class="login-wrapper d-flex align-items-center justify-content-center min-vh-100">
+  <div class="card shadow-lg" style="max-width: 420px; width: 100%;">
+    <div class="card-body p-4">
+      <div class="text-center mb-4">
+        <i class="bi bi-wallet2 text-primary" style="font-size: 3rem;"></i>
+        <h3 class="mt-2">{{ 'login.title' | translate }}</h3>
+        <p class="text-muted">{{ 'login.subtitle' | translate }}</p>
+      </div>
+
+      @if (error()) {
+        <div class="alert alert-danger py-2">{{ error() }}</div>
+      }
+
+      <form (ngSubmit)="onLogin()">
+        <div class="mb-3">
+          <label for="username" class="form-label">{{ 'login.username' | translate }}</label>
+          <div class="input-group">
+            <span class="input-group-text"><i class="bi bi-person"></i></span>
+            <input type="text" class="form-control" id="username" [(ngModel)]="username"
+              name="username" [placeholder]="'login.usernamePlaceholder' | translate" required autocomplete="username" />
+          </div>
+        </div>
+        <div class="mb-3">
+          <label for="password" class="form-label">{{ 'login.password' | translate }}</label>
+          <div class="input-group">
+            <span class="input-group-text"><i class="bi bi-lock"></i></span>
+            <input type="password" class="form-control" id="password" [(ngModel)]="password"
+              name="password" [placeholder]="'login.passwordPlaceholder' | translate" required autocomplete="current-password" />
+          </div>
+        </div>
+        <button type="submit" class="btn btn-primary w-100" [disabled]="loading() || !username || !password">
+          @if (loading()) {
+            <span class="spinner-border spinner-border-sm me-1"></span>
+          }
+          {{ 'login.signIn' | translate }}
+        </button>
+      </form>
+    </div>
+  </div>
+</div>

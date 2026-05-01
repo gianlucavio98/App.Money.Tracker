@@ -1,0 +1,447 @@
+<div class="container-fluid py-4">
+  <h2 class="mb-4"><i class="bi bi-gear me-2"></i>{{ 'admin.title' | translate }}</h2>
+
+  <!-- Tabs -->
+  <ul class="nav nav-tabs mb-4">
+    <li class="nav-item">
+      <a class="nav-link" [class.active]="activeTab === 'categories'" (click)="activeTab = 'categories'" role="button">
+        <i class="bi bi-tags me-1"></i> {{ 'admin.tabs.categories' | translate }}
+      </a>
+    </li>
+    <li class="nav-item">
+      <a class="nav-link" [class.active]="activeTab === 'budget'" (click)="activeTab = 'budget'" role="button">
+        <i class="bi bi-piggy-bank me-1"></i> {{ 'admin.tabs.budget' | translate }}
+      </a>
+    </li>
+    <li class="nav-item">
+      <a class="nav-link" [class.active]="activeTab === 'recurring'" (click)="activeTab = 'recurring'" role="button">
+        <i class="bi bi-repeat me-1"></i> {{ 'admin.tabs.recurring' | translate }}
+      </a>
+    </li>
+    <li class="nav-item">
+      <a class="nav-link" [class.active]="activeTab === 'expenses'" (click)="activeTab = 'expenses'" role="button">
+        <i class="bi bi-receipt me-1"></i> {{ 'admin.tabs.expenses' | translate }}
+      </a>
+    </li>
+    <li class="nav-item">
+      <a class="nav-link" [class.active]="activeTab === 'users'" (click)="activeTab = 'users'" role="button">
+        <i class="bi bi-people me-1"></i> {{ 'admin.tabs.users' | translate }}
+      </a>
+    </li>
+  </ul>
+
+  <!-- Categories Tab -->
+  @if (activeTab === 'categories') {
+    <div class="card mb-4">
+      <div class="card-header">{{ 'admin.categories.addTitle' | translate }}</div>
+      <div class="card-body">
+        <div class="row g-3 align-items-end">
+          <div class="col-md-3">
+            <label class="form-label">{{ 'admin.categories.nameEn' | translate }}</label>
+            <input type="text" class="form-control" [(ngModel)]="newCategoryName" [placeholder]="'admin.categories.namePlaceholder' | translate" />
+          </div>
+          <div class="col-md-3">
+            <label class="form-label">{{ 'admin.categories.nameIt' | translate }}</label>
+            <input type="text" class="form-control" [(ngModel)]="newCategoryNameIt" [placeholder]="'admin.categories.namePlaceholder' | translate" />
+          </div>
+          <div class="col-md-2">
+            <label class="form-label">{{ 'admin.categories.icon' | translate }}</label>
+            <div class="position-relative">
+              <div class="input-group">
+                <span class="input-group-text"><i class="bi {{ newCategoryIcon }}"></i></span>
+                <input type="text" class="form-control" [(ngModel)]="iconPickerSearch"
+                  [placeholder]="'admin.categories.iconSearch' | translate"
+                  (click)="openNewIconPicker($event)"
+                  (input)="showNewIconDropdown = true" />
+              </div>
+              @if (showNewIconDropdown) {
+                <div class="border rounded bg-body shadow-sm position-absolute w-100"
+                  style="z-index:1060; max-height:240px; overflow-y:auto;"
+                  (click)="stopPropagation($event)">
+                  <div class="d-flex flex-wrap gap-1 p-2">
+                    @for (icon of filteredIcons; track icon.class) {
+                      <button type="button" class="btn btn-sm btn-outline-secondary p-1"
+                        style="width:38px;height:38px;" [title]="icon.label"
+                        (click)="selectNewIcon(icon.class)">
+                        <i class="bi {{ icon.class }}"></i>
+                      </button>
+                    }
+                  </div>
+                  @if (filteredIcons.length === 0) {
+                    <div class="text-muted small p-2">{{ 'admin.categories.noIcons' | translate }}</div>
+                  }
+                </div>
+              }
+            </div>
+          </div>
+          <div class="col-md-2">
+            <label class="form-label">{{ 'admin.categories.color' | translate }}</label>
+            <input type="color" class="form-control form-control-color" [(ngModel)]="newCategoryColor" />
+          </div>
+          <div class="col-md-2">
+            <button class="btn btn-primary w-100" (click)="addCategory()" [disabled]="!newCategoryName.trim()">
+              <i class="bi bi-plus me-1"></i> {{ 'common.add' | translate }}
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="table-responsive">
+        <table class="table table-hover table-stacked mb-0">
+          <thead class="table-light">
+            <tr>
+              <th>{{ 'admin.categories.id' | translate }}</th>
+              <th>{{ 'admin.categories.icon' | translate }}</th>
+              <th>{{ 'admin.categories.nameEn' | translate }}</th>
+              <th>{{ 'admin.categories.nameIt' | translate }}</th>
+              <th>{{ 'admin.categories.color' | translate }}</th>
+              <th class="text-center">{{ 'common.actions' | translate }}</th>
+            </tr>
+          </thead>
+          <tbody>
+            @for (cat of categories(); track cat.id) {
+              <tr>
+                @if (editingCategory?.id === cat.id) {
+                  <td>{{ cat.id }}</td>
+                  <td>
+                    <div class="position-relative">
+                      <div class="input-group input-group-sm">
+                        <span class="input-group-text"><i class="bi {{ editingCategory!.icon }}"></i></span>
+                        <input type="text" class="form-control form-control-sm" [(ngModel)]="iconPickerSearch"
+                          [placeholder]="'admin.categories.iconSearch' | translate"
+                          (click)="openEditIconPicker($event)"
+                          (input)="showEditIconDropdown = true" />
+                      </div>
+                      @if (showEditIconDropdown) {
+                        <div class="border rounded bg-body shadow-sm position-absolute"
+                          style="z-index:1060; max-height:200px; overflow-y:auto; min-width:280px;"
+                          (click)="stopPropagation($event)">
+                          <div class="d-flex flex-wrap gap-1 p-2">
+                            @for (icon of filteredIcons; track icon.class) {
+                              <button type="button" class="btn btn-sm btn-outline-secondary p-1"
+                                style="width:34px;height:34px;" [title]="icon.label"
+                                (click)="selectEditIcon(icon.class)">
+                                <i class="bi {{ icon.class }}"></i>
+                              </button>
+                            }
+                          </div>
+                          @if (filteredIcons.length === 0) {
+                            <div class="text-muted small p-2">{{ 'admin.categories.noIcons' | translate }}</div>
+                          }
+                        </div>
+                      }
+                    </div>
+                  </td>
+                  <td><input type="text" class="form-control form-control-sm" [(ngModel)]="editingCategory!.name" /></td>
+                  <td><input type="text" class="form-control form-control-sm" [(ngModel)]="editingCategory!.translations!['it']" /></td>
+                  <td><input type="color" class="form-control form-control-color form-control-sm" [(ngModel)]="editingCategory!.color" /></td>
+                  <td class="text-center">
+                    <button class="btn btn-sm btn-success me-1" (click)="saveCategory()"><i class="bi bi-check"></i></button>
+                    <button class="btn btn-sm btn-secondary" (click)="cancelEditCategory()"><i class="bi bi-x"></i></button>
+                  </td>
+                } @else {
+                  <td [attr.data-label]="'admin.categories.id' | translate">{{ cat.id }}</td>
+                  <td [attr.data-label]="'admin.categories.icon' | translate"><i class="bi {{ cat.icon }}" [style.color]="cat.color"></i></td>
+                  <td [attr.data-label]="'admin.categories.nameEn' | translate">{{ cat.name }}</td>
+                  <td [attr.data-label]="'admin.categories.nameIt' | translate">{{ cat.translations?.['it'] || '—' }}</td>
+                  <td [attr.data-label]="'admin.categories.color' | translate"><span class="badge" [style.background-color]="cat.color">{{ cat.color }}</span></td>
+                  <td class="text-center td-actions">
+                    <button class="btn btn-sm btn-outline-primary me-1" (click)="startEditCategory(cat)"><i class="bi bi-pencil"></i></button>
+                    <button class="btn btn-sm btn-outline-danger" (click)="deleteCategory(cat.id!)"><i class="bi bi-trash"></i></button>
+                  </td>
+                }
+              </tr>
+            }
+          </tbody>
+        </table>
+      </div>
+    </div>
+  }
+
+  <!-- Budget Tab -->
+  @if (activeTab === 'budget') {
+    <div class="card mb-4">
+      <div class="card-header">{{ 'admin.budget.setTitle' | translate }}</div>
+      <div class="card-body">
+        <div class="row g-3 align-items-end">
+          <div class="col-md-4">
+            <label class="form-label">{{ 'admin.budget.month' | translate }}</label>
+            <input type="month" class="form-control" [(ngModel)]="budgetMonth" />
+          </div>
+          <div class="col-md-4">
+            <label class="form-label">{{ 'admin.budget.amountLabel' | translate }}</label>
+            <input type="number" class="form-control" [(ngModel)]="budgetAmount" step="0.01" min="0" placeholder="0.00" />
+          </div>
+          <div class="col-md-4">
+            <button class="btn btn-primary w-100" (click)="setBudget()" [disabled]="budgetAmount <= 0">
+              <i class="bi bi-save me-1"></i> {{ 'admin.budget.setButton' | translate }}
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="table-responsive">
+        <table class="table table-hover table-stacked mb-0">
+          <thead class="table-light">
+            <tr>
+              <th>{{ 'admin.budget.month' | translate }}</th>
+              <th>{{ 'common.amount' | translate }}</th>
+              <th class="text-center">{{ 'common.actions' | translate }}</th>
+            </tr>
+          </thead>
+          <tbody>
+            @for (b of budgets(); track b.id) {
+              <tr>
+                <td [attr.data-label]="'admin.budget.month' | translate">{{ b.month }}</td>
+                <td [attr.data-label]="'common.amount' | translate">€ {{ b.monthlyAmount | number:'1.2-2' }}</td>
+                <td class="text-center td-actions">
+                  <button class="btn btn-sm btn-outline-danger" (click)="deleteBudget(b.id!)"><i class="bi bi-trash"></i></button>
+                </td>
+              </tr>
+            } @empty {
+              <tr><td colspan="3" class="text-center text-muted py-3">{{ 'admin.budget.noBudgets' | translate }}</td></tr>
+            }
+          </tbody>
+        </table>
+      </div>
+    </div>
+  }
+
+  <!-- Recurring Tab -->
+  @if (activeTab === 'recurring') {
+    <div class="card mb-4">
+      <div class="card-header">{{ 'admin.recurring.addTitle' | translate }}</div>
+      <div class="card-body">
+        <div class="row g-3 align-items-end">
+          <div class="col-md-3">
+            <label class="form-label">{{ 'common.description' | translate }}</label>
+            <input type="text" class="form-control" [(ngModel)]="newRecurring.description" [placeholder]="'admin.recurring.descriptionPlaceholder' | translate" />
+          </div>
+          <div class="col-md-2">
+            <label class="form-label">{{ 'common.amount' | translate }} (€)</label>
+            <input type="number" class="form-control" [(ngModel)]="newRecurring.amount" step="0.01" min="0.01" />
+          </div>
+          <div class="col-md-2">
+            <label class="form-label">{{ 'common.category' | translate }}</label>
+            <app-category-select
+              [categories]="categories()"
+              [selected]="newRecurring.categoryId"
+              [placeholder]="'common.select' | translate"
+              (selectedChange)="newRecurring.categoryId = $event">
+            </app-category-select>
+          </div>
+          <div class="col-md-2">
+            <label class="form-label">{{ 'admin.recurring.frequency' | translate }}</label>
+            <select class="form-select" [(ngModel)]="newRecurring.frequency">
+              <option value="weekly">{{ 'admin.recurring.weekly' | translate }}</option>
+              <option value="monthly">{{ 'admin.recurring.monthly' | translate }}</option>
+              <option value="yearly">{{ 'admin.recurring.yearly' | translate }}</option>
+            </select>
+          </div>
+          <div class="col-md-3">
+            <label class="form-label">{{ 'admin.recurring.startDate' | translate }}</label>
+            <input type="date" class="form-control" [(ngModel)]="newRecurring.startDate" />
+          </div>
+        </div>
+        <div class="row g-3 mt-1 align-items-end">
+          <div class="col-md-3">
+            <label class="form-label">{{ 'admin.recurring.endDate' | translate }}</label>
+            <input type="date" class="form-control" [(ngModel)]="newRecurring.endDate" />
+          </div>
+          <div class="col-md-3">
+            <button class="btn btn-primary w-100" (click)="addRecurring()"
+              [disabled]="!newRecurring.description.trim() || newRecurring.amount <= 0 || !newRecurring.categoryId">
+              <i class="bi bi-plus me-1"></i> {{ 'admin.recurring.addButton' | translate }}
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="table-responsive">
+        <table class="table table-hover table-stacked mb-0">
+          <thead class="table-light">
+            <tr>
+              <th>{{ 'common.description' | translate }}</th>
+              <th>{{ 'common.amount' | translate }}</th>
+              <th>{{ 'common.category' | translate }}</th>
+              <th>{{ 'admin.recurring.frequency' | translate }}</th>
+              <th>{{ 'admin.recurring.startDate' | translate }}</th>
+              <th>{{ 'admin.recurring.endDate' | translate }}</th>
+              <th>{{ 'admin.recurring.active' | translate }}</th>
+              <th class="text-center">{{ 'common.actions' | translate }}</th>
+            </tr>
+          </thead>
+          <tbody>
+            @for (rec of recurringExpenses(); track rec.id) {
+              <tr>
+                @if (editingRecurring?.id === rec.id) {
+                  <td><input type="text" class="form-control form-control-sm" [(ngModel)]="editingRecurring!.description" /></td>
+                  <td><input type="number" class="form-control form-control-sm" [(ngModel)]="editingRecurring!.amount" step="0.01" /></td>
+                  <td>
+                    <app-category-select
+                      [categories]="categories()"
+                      [selected]="editingRecurring!.categoryId"
+                      [small]="true"
+                      (selectedChange)="editingRecurring!.categoryId = $event">
+                    </app-category-select>
+                  </td>
+                  <td>
+                    <select class="form-select form-select-sm" [(ngModel)]="editingRecurring!.frequency">
+                      <option value="weekly">{{ 'admin.recurring.weekly' | translate }}</option>
+                      <option value="monthly">{{ 'admin.recurring.monthly' | translate }}</option>
+                      <option value="yearly">{{ 'admin.recurring.yearly' | translate }}</option>
+                    </select>
+                  </td>
+                  <td><input type="date" class="form-control form-control-sm" [(ngModel)]="editingRecurring!.startDate" /></td>
+                  <td><input type="date" class="form-control form-control-sm" [(ngModel)]="editingRecurring!.endDate" /></td>
+                  <td>
+                    <div class="form-check form-switch">
+                      <input class="form-check-input" type="checkbox" [(ngModel)]="editingRecurring!.active" />
+                    </div>
+                  </td>
+                  <td class="text-center">
+                    <button class="btn btn-sm btn-success me-1" (click)="saveRecurring()"><i class="bi bi-check"></i></button>
+                    <button class="btn btn-sm btn-secondary" (click)="cancelEditRecurring()"><i class="bi bi-x"></i></button>
+                  </td>
+                } @else {
+                  <td [attr.data-label]="'common.description' | translate">{{ rec.description }}</td>
+                  <td [attr.data-label]="'common.amount' | translate">€ {{ rec.amount | number:'1.2-2' }}</td>
+                  <td [attr.data-label]="'common.category' | translate">{{ getCategoryName(rec.categoryId) }}</td>
+                  <td [attr.data-label]="'admin.recurring.frequency' | translate"><span class="badge bg-info">{{ rec.frequency }}</span></td>
+                  <td [attr.data-label]="'admin.recurring.startDate' | translate">{{ rec.startDate }}</td>
+                  <td [attr.data-label]="'admin.recurring.endDate' | translate">{{ rec.endDate || '—' }}</td>
+                  <td [attr.data-label]="'admin.recurring.active' | translate">
+                    <div class="form-check form-switch">
+                      <input class="form-check-input" type="checkbox" [checked]="rec.active"
+                        (change)="toggleRecurringActive(rec)" />
+                    </div>
+                  </td>
+                  <td class="text-center td-actions">
+                    <button class="btn btn-sm btn-outline-primary me-1" (click)="startEditRecurring(rec)"><i class="bi bi-pencil"></i></button>
+                    <button class="btn btn-sm btn-outline-danger" (click)="deleteRecurring(rec.id!)"><i class="bi bi-trash"></i></button>
+                  </td>
+                }
+              </tr>
+            } @empty {
+              <tr><td colspan="8" class="text-center text-muted py-3">{{ 'admin.recurring.noRecurring' | translate }}</td></tr>
+            }
+          </tbody>
+        </table>
+      </div>
+    </div>
+  }
+
+  <!-- All Expenses Tab -->
+  @if (activeTab === 'expenses') {
+    <!-- Filters -->
+    <div class="card mb-4">
+      <div class="card-body">
+        <div class="row g-3 align-items-end">
+          <div class="col-md-3">
+            <label class="form-label">{{ 'admin.expenses.search' | translate }}</label>
+            <div class="input-group">
+              <span class="input-group-text"><i class="bi bi-search"></i></span>
+              <input type="text" class="form-control" [placeholder]="'admin.expenses.searchPlaceholder' | translate"
+                [ngModel]="adminSearchQuery()" (ngModelChange)="adminSearchQuery.set($event)" />
+            </div>
+          </div>
+          <div class="col-md-3">
+            <label class="form-label">{{ 'common.category' | translate }}</label>
+            <app-category-multiselect
+              [categories]="categories()"
+              [selected]="adminFilterCategories()"
+              (selectedChange)="adminFilterCategories.set($event)">
+            </app-category-multiselect>
+          </div>
+          <div class="col-md-2">
+            <label class="form-label">{{ 'admin.expenses.from' | translate }}</label>
+            <input type="date" class="form-control"
+              [ngModel]="adminFilterStartDate()" (ngModelChange)="adminFilterStartDate.set($event)" />
+          </div>
+          <div class="col-md-2">
+            <label class="form-label">{{ 'admin.expenses.to' | translate }}</label>
+            <input type="date" class="form-control"
+              [ngModel]="adminFilterEndDate()" (ngModelChange)="adminFilterEndDate.set($event)" />
+          </div>
+          <div class="col-md-2">
+            <button class="btn btn-outline-secondary w-100" (click)="adminSearchQuery.set(''); adminFilterCategories.set([]); adminFilterStartDate.set(''); adminFilterEndDate.set('')">
+              <i class="bi bi-x-circle me-1"></i> {{ 'admin.expenses.clear' | translate }}
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="card">
+      <div class="card-header">{{ 'admin.expenses.allExpenses' | translate }} ({{ filteredAdminExpenses().length }} / {{ allExpenses().length }})</div>
+      <div class="table-responsive">
+        <table class="table table-hover table-stacked table-sm mb-0">
+          <thead class="table-light">
+            <tr>
+              <th>{{ 'admin.categories.id' | translate }}</th>
+              <th>{{ 'common.date' | translate }}</th>
+              <th>{{ 'common.description' | translate }}</th>
+              <th>{{ 'common.category' | translate }}</th>
+              <th class="text-end">{{ 'common.amount' | translate }}</th>
+              <th class="text-center">{{ 'common.actions' | translate }}</th>
+            </tr>
+          </thead>
+          <tbody>
+            @for (exp of filteredAdminExpenses(); track exp.id) {
+              <tr>
+                <td [attr.data-label]="'admin.categories.id' | translate">{{ exp.id }}</td>
+                <td [attr.data-label]="'common.date' | translate">{{ exp.date }}</td>
+                <td [attr.data-label]="'common.description' | translate">
+                  {{ exp.description }}
+                  @if (exp.recurringExpenseId) {
+                    <span class="badge bg-info ms-1"><i class="bi bi-repeat"></i></span>
+                  }
+                </td>
+                <td [attr.data-label]="'common.category' | translate">{{ getCategoryName(exp.categoryId) }}</td>
+                <td class="text-end" [attr.data-label]="'common.amount' | translate">€ {{ exp.amount | number:'1.2-2' }}</td>
+                <td class="text-center td-actions">
+                  <button class="btn btn-sm btn-outline-danger" (click)="deleteExpense(exp.id!)"><i class="bi bi-trash"></i></button>
+                </td>
+              </tr>
+            } @empty {
+              <tr><td colspan="6" class="text-center text-muted py-3">{{ 'admin.expenses.noExpenses' | translate }}</td></tr>
+            }
+          </tbody>
+        </table>
+      </div>
+    </div>
+  }
+
+  <!-- Users Tab -->
+  @if (activeTab === 'users') {
+    <div class="card">
+      <div class="table-responsive">
+        <table class="table table-hover table-stacked mb-0">
+          <thead class="table-light">
+            <tr>
+              <th>{{ 'admin.categories.id' | translate }}</th>
+              <th>{{ 'admin.users.username' | translate }}</th>
+              <th>{{ 'admin.users.displayName' | translate }}</th>
+              <th>{{ 'admin.users.createdAt' | translate }}</th>
+            </tr>
+          </thead>
+          <tbody>
+            @for (user of users(); track user.id) {
+              <tr>
+                <td [attr.data-label]="'admin.categories.id' | translate">{{ user.id }}</td>
+                <td [attr.data-label]="'admin.users.username' | translate">{{ user.username }}</td>
+                <td [attr.data-label]="'admin.users.displayName' | translate">{{ user.displayName }}</td>
+                <td [attr.data-label]="'admin.users.createdAt' | translate">{{ user.createdAt | date:'medium' }}</td>
+              </tr>
+            }
+          </tbody>
+        </table>
+      </div>
+    </div>
+  }
+</div>

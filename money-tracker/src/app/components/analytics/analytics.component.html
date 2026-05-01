@@ -1,0 +1,240 @@
+<div class="container-fluid py-4">
+  <div class="d-flex justify-content-between align-items-center mb-4 flex-wrap gap-2">
+    <h2 class="mb-0"><i class="bi bi-bar-chart me-2"></i>{{ 'analytics.title' | translate }}</h2>
+    <button class="btn btn-outline-primary btn-sm" (click)="exportPdf()" [disabled]="exporting()">
+      @if (exporting()) {
+        <span class="spinner-border spinner-border-sm me-1"></span>
+      } @else {
+        <i class="bi bi-file-pdf me-1"></i>
+      }
+      {{ 'analytics.exportPdf' | translate }}
+    </button>
+  </div>
+
+  <!-- Filters -->
+  <div class="card mb-4">
+    <div class="card-body">
+      <div class="row g-3 align-items-end">
+        <div class="col-md-4">
+          <label class="form-label">{{ 'analytics.dateRange' | translate }}</label>
+          <select class="form-select" [(ngModel)]="selectedRange" (ngModelChange)="onRangeChange()">
+            @for (opt of dateRangeOptions; track opt) {
+              <option [value]="opt">{{ dateRangeLabels[opt] | translate }}</option>
+            }
+          </select>
+        </div>
+        @if (selectedRange === DateRange.Custom) {
+          <div class="col-md-3">
+            <label class="form-label">{{ 'common.from' | translate }}</label>
+            <input type="date" class="form-control" [(ngModel)]="customStartDate" (change)="onRangeChange()" />
+          </div>
+          <div class="col-md-3">
+            <label class="form-label">{{ 'common.to' | translate }}</label>
+            <input type="date" class="form-control" [(ngModel)]="customEndDate" (change)="onRangeChange()" />
+          </div>
+        }
+        <div class="col-md-4">
+          <label class="form-label">{{ 'analytics.groupBy' | translate }}</label>
+          <div class="btn-group w-100">
+            @for (opt of groupByOptions; track opt) {
+              <button class="btn btn-sm"
+                [class]="groupBy === opt ? 'btn-primary' : 'btn-outline-primary'"
+                [disabled]="!allowedGroupings.has(opt)"
+                (click)="groupBy = opt; onGroupByChange()">{{ groupByLabels[opt] | translate }}</button>
+            }
+          </div>
+        </div>
+        <div class="col-md-4">
+          <label class="form-label">{{ 'common.category' | translate }}</label>
+          <app-category-multiselect
+            [categories]="categories()"
+            [selected]="filterCategories"
+            (selectedChange)="onCategoryFilterChange($event)">
+          </app-category-multiselect>
+        </div>
+        <div class="col-auto ms-auto align-self-end">
+          <button class="btn btn-outline-secondary btn-sm" (click)="clearFilters()">
+            <i class="bi bi-x-circle me-1"></i> {{ 'common.clear' | translate }}
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Summary -->
+  <div #analyticsContent>
+  <div class="row g-3 mb-4">
+    <div class="col-md-3">
+      <div class="card bg-primary text-white">
+        <div class="card-body">
+          <h6>{{ 'analytics.totalSpent' | translate }}</h6>
+          <h3 class="mb-0">€ {{ totalSpent() | number:'1.2-2' }}</h3>
+        </div>
+      </div>
+    </div>
+    <div class="col-md-3">
+      <div class="card">
+        <div class="card-body">
+          <h6>{{ 'analytics.entries' | translate }}</h6>
+          <h3 class="mb-0">{{ expenses().length }}</h3>
+        </div>
+      </div>
+    </div>
+    <div class="col-md-3">
+      <div class="card">
+        <div class="card-body">
+          <h6>{{ 'analytics.avgPerEntry' | translate }}</h6>
+          <h3 class="mb-0">€ {{ avgPerEntry() | number:'1.2-2' }}</h3>
+        </div>
+      </div>
+    </div>
+    <div class="col-md-3">
+      <div class="card">
+        <div class="card-body">
+          <h6>{{ 'analytics.avgDaily' | translate }}</h6>
+          <h3 class="mb-0">€ {{ avgDailySpending() | number:'1.2-2' }}</h3>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="row g-4 mb-4">
+    <!-- Category Breakdown Table -->
+    <div class="col-lg-6">
+      <div class="card h-100">
+        <div class="card-header"><i class="bi bi-table me-2"></i>{{ 'analytics.categoryBreakdown' | translate }}</div>
+        <div class="card-body p-0">
+          @if (categoryBreakdown().length > 0) {
+            <div class="table-responsive">
+              <table class="table table-hover table-stacked mb-0">
+                <thead>
+                  <tr>
+                    <th>{{ 'common.category' | translate }}</th>
+                    <th class="text-end">{{ 'common.amount' | translate }}</th>
+                    <th class="text-end">{{ 'analytics.percent' | translate }}</th>
+                    <th class="text-end">{{ 'analytics.entries' | translate }}</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  @for (cat of categoryBreakdown(); track cat.name) {
+                    <tr>
+                      <td [attr.data-label]="'common.category' | translate">
+                        <span class="badge me-2" [style.background-color]="cat.color">&nbsp;</span>
+                        {{ cat.name }}
+                      </td>
+                      <td class="text-end" [attr.data-label]="'common.amount' | translate">€ {{ cat.amount | number:'1.2-2' }}</td>
+                      <td class="text-end" [attr.data-label]="'analytics.percent' | translate">{{ cat.pct | number:'1.1-1' }}%</td>
+                      <td class="text-end" [attr.data-label]="'analytics.entries' | translate">{{ cat.count }}</td>
+                    </tr>
+                  }
+                </tbody>
+              </table>
+            </div>
+          } @else {
+            <p class="text-muted text-center py-3">{{ 'common.noData' | translate }}</p>
+          }
+        </div>
+      </div>
+    </div>
+
+    <!-- Top 5 Expenses -->
+    <div class="col-lg-6">
+      <div class="card h-100">
+        <div class="card-header"><i class="bi bi-trophy me-2"></i>{{ 'analytics.top5' | translate }}</div>
+        <div class="card-body p-0">
+          @if (topExpenses().length > 0) {
+            <div class="table-responsive">
+              <table class="table table-hover table-stacked mb-0">
+                <thead>
+                  <tr>
+                    <th>{{ 'common.description' | translate }}</th>
+                    <th>{{ 'common.category' | translate }}</th>
+                    <th>{{ 'common.date' | translate }}</th>
+                    <th class="text-end">{{ 'common.amount' | translate }}</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  @for (exp of topExpenses(); track exp.id) {
+                    <tr>
+                      <td [attr.data-label]="'common.description' | translate">{{ exp.description }}</td>
+                      <td [attr.data-label]="'common.category' | translate">
+                        <span class="badge" [style.background-color]="exp.categoryColor">{{ exp.categoryName }}</span>
+                      </td>
+                      <td [attr.data-label]="'common.date' | translate">{{ exp.date }}</td>
+                      <td class="text-end fw-bold" [attr.data-label]="'common.amount' | translate">€ {{ exp.amount | number:'1.2-2' }}</td>
+                    </tr>
+                  }
+                </tbody>
+              </table>
+            </div>
+          } @else {
+            <p class="text-muted text-center py-3">{{ 'common.noData' | translate }}</p>
+          }
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Trend Chart -->
+  <div class="card mb-4">
+    <div class="card-header"><i class="bi bi-graph-up me-2"></i>{{ 'analytics.spendingTrend' | translate }}</div>
+    <div class="card-body">
+      @if (expenses().length > 0) {
+        <div class="chart-container" style="position: relative; height: 300px;">
+          <canvas baseChart [data]="trendChartData()" type="line" [options]="trendOptions"></canvas>
+        </div>
+      } @else {
+        <p class="text-muted text-center">{{ 'common.noData' | translate }}</p>
+      }
+    </div>
+  </div>
+
+  <div class="row g-4">
+    <!-- Category Breakdown -->
+    <div class="col-lg-5">
+      <div class="card h-100">
+        <div class="card-header"><i class="bi bi-pie-chart me-2"></i>{{ 'analytics.byCategory' | translate }}</div>
+        <div class="card-body">
+          @if (expenses().length > 0) {
+            <div class="chart-container" style="position: relative; height: 300px;">
+              <canvas baseChart [data]="categoryChartData()" type="doughnut" [options]="categoryOptions"></canvas>
+            </div>
+          } @else {
+            <p class="text-muted">{{ 'common.noData' | translate }}</p>
+          }
+        </div>
+      </div>
+    </div>
+
+    <!-- Category Comparison -->
+    <div class="col-lg-7">
+      <div class="card h-100">
+        <div class="card-header"><i class="bi bi-bar-chart-stacked me-2"></i>{{ 'analytics.categoryComparison' | translate }}</div>
+        <div class="card-body">
+          @if (expenses().length > 0) {
+            <div class="chart-container" style="position: relative; height: 300px;">
+              <canvas baseChart [data]="comparisonChartData()" type="bar" [options]="comparisonOptions"></canvas>
+            </div>
+          } @else {
+            <p class="text-muted">{{ 'common.noData' | translate }}</p>
+          }
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Spending by Day of Week -->
+  <div class="card mt-4 mb-4">
+    <div class="card-header"><i class="bi bi-calendar-week me-2"></i>{{ 'analytics.avgByDayOfWeek' | translate }}</div>
+    <div class="card-body">
+      @if (expenses().length > 0) {
+        <div class="chart-container" style="position: relative; height: 300px;">
+          <canvas baseChart [data]="dayOfWeekData()" type="bar" [options]="dayOfWeekOptions"></canvas>
+        </div>
+      } @else {
+        <p class="text-muted text-center">{{ 'common.noData' | translate }}</p>
+      }
+    </div>
+  </div>
+  </div>
+</div>

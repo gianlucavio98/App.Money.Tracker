@@ -1,0 +1,49 @@
+<nav class="navbar navbar-expand-lg navbar-dark bg-primary shadow-sm fixed-top">
+  <div class="container-fluid">
+    <a class="navbar-brand d-flex align-items-center" routerLink="/dashboard" (click)="closeNav()">
+      <i class="bi bi-wallet2 me-2"></i> {{ 'navbar.brand' | translate }}
+    </a>
+    <button class="navbar-toggler" type="button" (click)="toggleNav()" aria-label="Toggle navigation">
+      <span class="navbar-toggler-icon"></span>
+    </button>
+    <div class="collapse navbar-collapse" [class.show]="!isCollapsed">
+      <ul class="navbar-nav me-auto mb-2 mb-lg-0">
+        <li class="nav-item">
+          <a class="nav-link" routerLink="/dashboard" routerLinkActive="active" (click)="closeNav()">
+            <i class="bi bi-speedometer2 me-1"></i> {{ 'navbar.dashboard' | translate }}
+          </a>
+        </li>
+        <li class="nav-item">
+          <a class="nav-link" routerLink="/expenses" routerLinkActive="active" (click)="closeNav()">
+            <i class="bi bi-list-ul me-1"></i> {{ 'navbar.expenses' | translate }}
+          </a>
+        </li>
+        <li class="nav-item">
+          <a class="nav-link" routerLink="/analytics" routerLinkActive="active" (click)="closeNav()">
+            <i class="bi bi-bar-chart me-1"></i> {{ 'navbar.analytics' | translate }}
+          </a>
+        </li>
+        <li class="nav-item">
+          <a class="nav-link" routerLink="/admin" routerLinkActive="active" (click)="closeNav()">
+            <i class="bi bi-gear me-1"></i> {{ 'navbar.admin' | translate }}
+          </a>
+        </li>
+      </ul>
+      <div class="d-flex align-items-center">
+        <button class="btn btn-outline-light btn-sm me-2" (click)="i18n.toggleLang()" [title]="'navbar.language' | translate">
+          <i class="bi bi-translate me-1"></i>{{ i18n.lang().toUpperCase() }}
+        </button>
+        <button class="btn btn-outline-light btn-sm me-2" (click)="themeService.toggle()" [title]="'navbar.toggleTheme' | translate">
+          <i class="bi" [class.bi-sun-fill]="themeService.theme() === 'dark'" [class.bi-moon-fill]="themeService.theme() === 'light'"></i>
+        </button>
+        <span class="text-white me-3 d-flex align-items-center">
+          <i class="bi bi-person-circle me-1"></i>
+          <span class="d-none d-md-inline">{{ auth.user()?.displayName }}</span>
+        </span>
+        <button class="btn btn-outline-light btn-sm" (click)="auth.logout(); closeNav()">
+          <i class="bi bi-box-arrow-right me-1"></i> {{ 'navbar.logout' | translate }}
+        </button>
+      </div>
+    </div>
+  </div>
+</nav>

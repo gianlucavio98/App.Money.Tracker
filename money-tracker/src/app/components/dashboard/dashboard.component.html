@@ -1,0 +1,130 @@
+<div class="container-fluid py-4" #dashboardContent>
+  <div class="d-flex justify-content-between align-items-center mb-4 flex-wrap gap-2">
+    <h2 class="mb-0"><i class="bi bi-speedometer2 me-2"></i>{{ 'dashboard.title' | translate }}</h2>
+    <button class="btn btn-outline-primary btn-sm" (click)="exportPdf()">
+      <i class="bi bi-file-pdf me-1"></i> {{ 'dashboard.exportPdf' | translate }}
+    </button>
+  </div>
+
+  <!-- Filters -->
+  <div class="card mb-4">
+    <div class="card-body">
+      <div class="row g-3 align-items-end">
+        <div class="col-md-3">
+          <label class="form-label">{{ 'dashboard.month' | translate }}</label>
+          <input type="month" class="form-control" [(ngModel)]="selectedMonth" (change)="onMonthChange()" />
+        </div>
+        <div class="col-md-3">
+          <label class="form-label">{{ 'common.category' | translate }}</label>
+          <app-category-multiselect
+            [categories]="categories()"
+            [selected]="selectedCategories"
+            (selectedChange)="onCategoryFilterChange($event)">
+          </app-category-multiselect>
+        </div>
+        <div class="col-auto ms-auto align-self-end">
+          <button class="btn btn-outline-secondary btn-sm" (click)="clearFilters()">
+            <i class="bi bi-x-circle me-1"></i> {{ 'common.clear' | translate }}
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Summary Cards -->
+  <div class="row g-3 mb-4">
+    <div class="col-md-4">
+      <div class="card bg-primary text-white h-100">
+        <div class="card-body">
+          <div class="d-flex justify-content-between align-items-center">
+            <div>
+              <h6 class="card-title mb-1">{{ 'dashboard.totalSpent' | translate }}</h6>
+              <h3 class="mb-0">€ {{ totalSpent() | number:'1.2-2' }}</h3>
+            </div>
+            <i class="bi bi-cash-stack" style="font-size: 2.5rem; opacity: 0.7;"></i>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="col-md-4">
+      <div class="card h-100">
+        <div class="card-body">
+          <div class="d-flex justify-content-between align-items-center">
+            <div>
+              <h6 class="card-title mb-1">{{ 'dashboard.entries' | translate }}</h6>
+              <h3 class="mb-0">{{ expenses().length }}</h3>
+            </div>
+            <i class="bi bi-receipt text-primary" style="font-size: 2.5rem; opacity: 0.7;"></i>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="col-md-4">
+      <div class="card h-100">
+        <div class="card-body">
+          <h6 class="card-title mb-2">{{ 'dashboard.monthlyBudget' | translate }}</h6>
+          @if (budgetAmount() > 0) {
+            <div class="d-flex justify-content-between mb-1">
+              <small>€ {{ totalSpent() | number:'1.2-2' }} / € {{ budgetAmount() | number:'1.2-2' }}</small>
+              <small>{{ budgetProgress() | number:'1.0-0' }}%</small>
+            </div>
+            <div class="progress mb-2" style="height: 20px;">
+              <div class="progress-bar bg-{{ getBudgetColor() }}"
+                [style.width.%]="budgetProgress()">
+              </div>
+            </div>
+            <small class="text-muted">
+              @if (budgetRemaining() > 0) {
+                € {{ budgetRemaining() | number:'1.2-2' }} {{ 'dashboard.remaining' | translate }}
+              } @else {
+                {{ 'dashboard.exceededBy' | translate }} € {{ (totalSpent() - budgetAmount()) | number:'1.2-2' }}
+              }
+            </small>
+          } @else {
+            <p class="text-muted mb-0">{{ 'dashboard.noBudget' | translate }}</p>
+          }
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Charts -->
+  <div class="row g-4 mb-4">
+    <div class="col-lg-5">
+      <div class="card h-100">
+        <div class="card-header"><i class="bi bi-pie-chart me-2"></i>{{ 'dashboard.spendingByCategory' | translate }}</div>
+        <div class="card-body">
+          @if (expenses().length > 0) {
+            <div class="chart-container" style="position: relative; height: 300px;">
+              <canvas baseChart
+                [data]="categoryChartData()"
+                type="doughnut"
+                [options]="categoryChartOptions">
+              </canvas>
+            </div>
+          } @else {
+            <p class="text-muted">{{ 'dashboard.noDataPeriod' | translate }}</p>
+          }
+        </div>
+      </div>
+    </div>
+    <div class="col-lg-7">
+      <div class="card h-100">
+        <div class="card-header"><i class="bi bi-bar-chart me-2"></i>{{ 'dashboard.dailySpending' | translate }}</div>
+        <div class="card-body">
+          @if (expenses().length > 0) {
+            <div class="chart-container" style="position: relative; height: 300px;">
+              <canvas baseChart
+                [data]="dailyChartData()"
+                type="bar"
+                [options]="dailyChartOptions">
+              </canvas>
+            </div>
+          } @else {
+            <p class="text-muted">{{ 'dashboard.noDataPeriod' | translate }}</p>
+          }
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
