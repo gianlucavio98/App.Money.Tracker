@@ -15,5 +15,5 @@ jobs:
     - id: build-publish
       uses: bitovi/github-actions-angular-to-github-pages@v1.0.0
       with:
-        path: money-tracker/dist/money-tracker/browser
+        path: dist/money-tracker/browser
         
